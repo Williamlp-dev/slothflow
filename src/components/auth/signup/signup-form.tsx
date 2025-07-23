@@ -57,7 +57,6 @@ export function SignupForm() {
       },
       onSuccess: (ctx) => {
         setIsLoading(false)
-        router.replace("/dashboard")
       },
       onError: (ctx) => {
         setIsLoading(false)
