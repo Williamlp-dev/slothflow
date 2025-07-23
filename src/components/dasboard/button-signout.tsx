@@ -17,7 +17,6 @@ export function ButtonSignOut() {
     })
     
   }
-
   return (
     <Button onClick={signOut}>
       Sair da conta
