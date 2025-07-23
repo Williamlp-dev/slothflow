@@ -1,5 +1,8 @@
+"use client"
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
+import { Loader2 } from "lucide-react";
+import { useState } from "react";
 
 const GoogleIcon = () => (
   <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -10,22 +13,32 @@ const GoogleIcon = () => (
   </svg>
 );
 
-async function handleSignInWithGoogle() {
-  await authClient.signIn.social({
-    provider: 'google',
-    callbackURL: '/dashboard'
-  })
-}
-
 export default function SignGoogle({ className }: { className?: string }) {
+  const [isLoading, setIsLoading] = useState(false);
+
+  async function handleSignInWithGoogle() {
+    setIsLoading(true);
+    try {
+      await authClient.signIn.social({
+        provider: 'google',
+        callbackURL: '/dashboard'
+      });
+    } catch (error) {
+      console.error('Google sign-in error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
   return (
     <Button
       type="button"
       variant="outline"
       onClick={handleSignInWithGoogle}
+      disabled={isLoading}
       className={className}
     >
-      <GoogleIcon />
+      {isLoading ? <Loader2 className="animate-spin" /> : <GoogleIcon />}
     </Button>
-  )
+  );
 }
