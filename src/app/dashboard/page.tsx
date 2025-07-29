@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { AppSidebar } from "@/components/dasboard/sidebar/app-sidebar"
 import { SiteHeader } from "@/components/dasboard/sidebar/Header/site-header"
+import { NoteViewer } from "@/components/notes/note-viewer"
 import {
   SidebarInset,
   SidebarProvider,
@@ -10,14 +11,14 @@ import {
 
 export default async function Dashboard() {
   const session = await auth.api.getSession({
-    headers: await headers() 
-})
-if(!session) {
-  redirect("/login")
-}
+    headers: await headers()
+  })
 
- return (
+  if(!session) {
+    redirect("/login")
+  }
 
+  return (
     <SidebarProvider
       style={
         {
@@ -29,11 +30,8 @@ if(!session) {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-2">
-            <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-            </div>
-          </div>
+        <div className="flex flex-1 flex-col p-4">
+          <NoteViewer />
         </div>
       </SidebarInset>
     </SidebarProvider>
