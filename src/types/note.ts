@@ -4,4 +4,5 @@ export type Note = {
   description: string
   createdAt: Date
   updatedAt: Date
+  userId: string
 }
