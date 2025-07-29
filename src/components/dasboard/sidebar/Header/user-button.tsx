@@ -7,8 +7,8 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
-import { Settings2, LogOut, User2 } from "lucide-react"
-import { ButtonSignOut } from "../../button-signout"
+import { User2 } from "lucide-react"
+import { ButtonSignOut } from "@/components/auth/authbuttons/button-signout"
 
 export default function UserButton() {
   return (
