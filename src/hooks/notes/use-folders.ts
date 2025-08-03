@@ -32,7 +32,8 @@ export function useFolders() {
     if (result.success && result.data) {
       setFolders((prev) => [...prev, result.data].sort((a, b) => a.name.localeCompare(b.name)))
     } else {
-      alert(`Não foi possível criar a pasta: ${result.error}`)
+      const errorMessage = !result.success ? result.error : 'Erro desconhecido'
+      alert(`Não foi possível criar a pasta: ${errorMessage}`)
     }
   }
 
@@ -50,7 +51,8 @@ export function useFolders() {
       )
       return true
     } else {
-      alert(`Erro ao renomear pasta: ${result.error}`)
+      const errorMessage = !result.success ? result.error : 'Erro desconhecido'
+      alert(`Erro ao renomear pasta: ${errorMessage}`)
       return false
     }
   }
@@ -65,7 +67,8 @@ export function useFolders() {
         setSelectedFolderId('unfiled')
       }
     } else {
-      alert(`Erro ao deletar pasta: ${result.error}`)
+      const errorMessage = !result.success ? result.error : 'Erro desconhecido'
+      alert(`Erro ao deletar pasta: ${errorMessage}`)
     }
   }
 

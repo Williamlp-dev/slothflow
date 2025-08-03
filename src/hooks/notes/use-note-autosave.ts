@@ -1,14 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import debounce from 'lodash.debounce';
-import { useNoteStore, Note } from '@/lib/stores/note-store';
+import { useNoteStore } from '@/lib/stores/note-store';
 import { updateNote } from '@/actions/note-actions';
-
-type SaveStatus = 'idle' | 'saving' | 'saved';
-
-type NoteContent = {
-  title: string;
-  description: string;
-};
+import type { Note, SaveStatus, NoteContent } from '@/types';
 
 export function useNoteAutoSave(note: Note, content: NoteContent) {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');

@@ -1,5 +1,4 @@
 import { FileText, MoreHorizontal, Trash2 } from 'lucide-react';
-import { Note } from '@/lib/stores/note-store';
 import { cn } from '@/lib/utils';
 import { SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
@@ -9,6 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import type { Note } from '@/types';
 
 interface NoteListItemProps {
   note: Note;

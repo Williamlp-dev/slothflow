@@ -1,7 +1,6 @@
-import { Folder } from '@/hooks/notes/use-folders';
 import { SidebarMenuItem } from '@/components/ui/sidebar';
 import { FolderListItem } from './folder-list-item';
-import { Note } from '@/lib/stores/note-store';
+import type { Folder, Note } from '@/types';
 
 interface FolderListProps {
   folders: Folder[];
@@ -54,7 +53,8 @@ export function FolderList({
             key={folder.id}
             folder={folder}
             notesInFolder={notesInFolder}
-            isSelected={false} // A seleção ativa é visualmente tratada no botão
+            isSelected={false}
+            
             onSelect={onFolderSelect}
             onDelete={onFolderDelete}
             onRename={onFolderRename}

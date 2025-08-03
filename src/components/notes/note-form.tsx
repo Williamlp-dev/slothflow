@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
-import { useNoteStore, Note } from '@/lib/stores/note-store';
+import { useNoteStore } from '@/lib/stores/note-store';
 import { useNoteAutoSave } from '@/hooks/notes/use-note-autosave';
+import type { Note, SaveStatus } from '@/types';
 
 interface NoteFormProps {
   note: Note;
 }
 
-function SaveIndicator({ status }: { status: 'idle' | 'saving' | 'saved' }) {
+function SaveIndicator({ status }: { status: SaveStatus }) {
   if (status !== 'saving') return null;
 
   return (

@@ -1,6 +1,7 @@
-import { Note } from '@/lib/stores/note-store';
+
 import { SidebarMenuItem } from '@/components/ui/sidebar';
 import { NoteListItem } from './note-list-item';
+import type { Note } from '@/types';
 
 interface NoteListProps {
   notes: Note[];

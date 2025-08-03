@@ -1,7 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
 import { Folder, MoreHorizontal, Plus, ChevronDown, ChevronRight, FileText, Trash2, Edit, FilePlus } from 'lucide-react';
-import { Folder as FolderType } from '@/hooks/notes/use-folders';
-import { Note } from '@/lib/stores/note-store';
 import { cn } from '@/lib/utils';
 import { SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
@@ -12,6 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import type { Folder as FolderType, Note } from '@/types';
 
 interface FolderListItemProps {
   folder: FolderType;
@@ -162,8 +161,6 @@ export function FolderListItem({
           </div>
         )}
       </div>
-
-      {/* Notes in folder - rendered as div elements, not li */}
       {isExpanded && notesInFolder.length > 0 && (
         <div className="ml-4 mt-1 w-full space-y-1">
           {notesInFolder.map((note) => (
