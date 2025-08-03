@@ -24,6 +24,7 @@ model User {
   sessions      Session[]
   accounts      Account[]
   notes         Note[]
+  folders       Folder[] // Relação com pastas
 
   @@unique([email])
   @@map("user")
@@ -74,6 +75,18 @@ model Verification {
   @@map("verification")
 }
 
+model Folder {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notes     Note[]
+
+  @@map("folders")
+}
+
 model Note {
   id          String   @id @default(cuid())
   title       String
@@ -82,6 +95,8 @@ model Note {
   updatedAt   DateTime @updatedAt
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  folderId    String? // Campo opcional para o ID da pasta
+  folder      Folder?  @relation(fields: [folderId], references: [id], onDelete: SetNull) // Relação opcional com a pasta
 
   @@map("notes")
 }
