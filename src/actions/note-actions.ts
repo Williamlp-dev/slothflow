@@ -2,27 +2,8 @@
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
-import { auth } from '@/lib/auth'
-import { headers } from 'next/headers'
-
-type Note = {
-  id: string
-  title: string
-  description: string
-  createdAt: Date
-  updatedAt: Date
-  userId: string
-}
-
-type ActionResult<T = any> =
-  | {
-      success: true
-      data: T
-    }
-  | {
-      success: false
-      error: string
-    }
+import { getCurrentUser } from '@/utils/auth-utils'
+import type { ActionResult, Note } from '@/types'
 
 const updateNoteSchema = z.object({
   id: z.string(),
@@ -30,21 +11,11 @@ const updateNoteSchema = z.object({
   description: z.string().max(5000, 'Descrição muito longa').optional(),
 })
 
-async function getCurrentUser() {
-  const session = await auth.api.getSession({
-    headers: await headers()
-  })
-  
-  if (!session?.user?.id) {
-    throw new Error('Usuário não autenticado')
-  }
-  
-  return session.user
+function revalidateDashboard() {
+  revalidatePath('/dashboard', 'page')
 }
 
-export async function createNote(
-  formData: FormData
-): Promise<ActionResult<Note>> {
+export async function createNote(formData: FormData): Promise<ActionResult<Note>> {
   try {
     const user = await getCurrentUser()
     
@@ -57,16 +28,12 @@ export async function createNote(
         title,
         description,
         userId: user.id,
-        folderId: folderId, // Associa a nota à pasta, se um folderId for fornecido
+        folderId,
       },
     })
 
-    revalidatePath('/dashboard', 'page')
-    
-    return {
-      success: true,
-      data: note,
-    }
+    revalidateDashboard()
+    return { success: true, data: note }
   } catch (error) {
     console.error('Erro ao criar nota:', error)
     return {
@@ -76,26 +43,18 @@ export async function createNote(
   }
 }
 
-export async function updateNote(
-  formData: FormData
-): Promise<ActionResult<Note>> {
+export async function updateNote(formData: FormData): Promise<ActionResult<Note>> {
   try {
     const user = await getCurrentUser()
-    
-    const data = {
-      id: formData.get('id') as string,
-      title: formData.get('title') as string,
-      description: formData.get('description') as string,
-    }
-
-    const validatedData = updateNoteSchema.parse(data)
+    const { id, title, description } = updateNoteSchema.parse({
+      id: formData.get('id'),
+      title: formData.get('title'),
+      description: formData.get('description'),
+    })
 
     const currentNote = await prisma.note.findFirst({
-      where: { 
-        id: validatedData.id,
-        userId: user.id
-      },
-      select: { title: true, description: true, updatedAt: true }
+      where: { id, userId: user.id },
+      select: { title: true, description: true }
     })
 
     if (!currentNote) {
@@ -105,38 +64,26 @@ export async function updateNote(
       }
     }
 
-    const titleChanged = validatedData.title && validatedData.title !== currentNote.title
-    const descriptionChanged = validatedData.description !== undefined && 
-                              validatedData.description !== currentNote.description
+    const titleChanged = title && title !== currentNote.title
+    const descriptionChanged = description !== undefined && description !== currentNote.description
 
     if (!titleChanged && !descriptionChanged) {
       const fullNote = await prisma.note.findFirst({
-        where: { 
-          id: validatedData.id,
-          userId: user.id
-        }
+        where: { id, userId: user.id }
       })
-      
-      return { 
-        success: true, 
-        data: fullNote! 
-      }
+      return { success: true, data: fullNote! }
     }
 
     const updateData: any = {}
-    if (titleChanged) updateData.title = validatedData.title
-    if (descriptionChanged) updateData.description = validatedData.description
+    if (titleChanged) updateData.title = title
+    if (descriptionChanged) updateData.description = description
 
     const updatedNote = await prisma.note.update({
-      where: { 
-        id: validatedData.id,
-        userId: user.id
-      },
+      where: { id, userId: user.id },
       data: updateData,
     })
 
-    revalidatePath('/dashboard', 'page')
-    
+    revalidateDashboard()
     return { success: true, data: updatedNote }
   } catch (error) {
     console.error('Erro ao atualizar nota:', error)
@@ -153,122 +100,12 @@ export async function updateNote(
   }
 }
 
-export async function batchUpdateNotes(
-  updates: Array<{ id: string; title?: string; description?: string }>
-): Promise<ActionResult<Note[]>> {
-  try {
-    const user = await getCurrentUser()
-    
-    const noteIds = updates.map(update => update.id)
-    const userNotes = await prisma.note.findMany({
-      where: {
-        id: { in: noteIds },
-        userId: user.id
-      },
-      select: { id: true }
-    })
-    
-    if (userNotes.length !== noteIds.length) {
-      return {
-        success: false,
-        error: 'Algumas notas não foram encontradas ou você não tem permissão para editá-las'
-      }
-    }
-
-    const results = await Promise.all(
-      updates.map(async (update) => {
-        const { id, ...data } = update
-        return prisma.note.update({
-          where: { 
-            id,
-            userId: user.id
-          },
-          data
-        })
-      })
-    )
-
-    revalidatePath('/dashboard', 'page')
-    return { success: true, data: results }
-  } catch (error) {
-    console.error('Erro no batch update:', error)
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Erro ao atualizar notas'
-    }
-  }
-}
-
-export async function updateNoteWithTimestamp(
-  formData: FormData,
-  lastKnownUpdate?: Date
-): Promise<ActionResult<Note>> {
-  try {
-    const user = await getCurrentUser()
-    
-    const data = {
-      id: formData.get('id') as string,
-      title: formData.get('title') as string,
-      description: formData.get('description') as string,
-    }
-
-    const validatedData = updateNoteSchema.parse(data)
-
-    if (lastKnownUpdate) {
-      const currentNote = await prisma.note.findFirst({
-        where: { 
-          id: validatedData.id,
-          userId: user.id
-        },
-        select: { updatedAt: true }
-      })
-
-      if (!currentNote) {
-        return {
-          success: false,
-          error: 'Nota não encontrada ou você não tem permissão para editá-la'
-        }
-      }
-
-      if (currentNote.updatedAt > lastKnownUpdate) {
-        return {
-          success: false,
-          error: 'CONFLICT: Nota foi atualizada por outro usuário'
-        }
-      }
-    }
-
-    const updatedNote = await prisma.note.update({
-      where: { 
-        id: validatedData.id,
-        userId: user.id
-      },
-      data: {
-        title: validatedData.title,
-        description: validatedData.description,
-      },
-    })
-
-    revalidatePath('/dashboard', 'page')
-    return { success: true, data: updatedNote }
-  } catch (error) {
-    console.error('Erro ao atualizar nota:', error)
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Erro ao atualizar nota',
-    }
-  }
-}
-
 export async function deleteNote(noteId: string): Promise<ActionResult> {
   try {
     const user = await getCurrentUser()
     
     const note = await prisma.note.findFirst({
-      where: {
-        id: noteId,
-        userId: user.id
-      }
+      where: { id: noteId, userId: user.id }
     })
 
     if (!note) {
@@ -279,13 +116,10 @@ export async function deleteNote(noteId: string): Promise<ActionResult> {
     }
     
     await prisma.note.delete({
-      where: { 
-        id: noteId,
-        userId: user.id
-      },
+      where: { id: noteId, userId: user.id },
     })
     
-    revalidatePath('/dashboard', 'page')
+    revalidateDashboard()
     return { success: true, data: null }
   } catch (error) {
     console.error('Erro ao deletar nota:', error)
@@ -296,39 +130,15 @@ export async function deleteNote(noteId: string): Promise<ActionResult> {
   }
 }
 
-export async function getNotes() {
+export async function getNotes(): Promise<Note[]> {
   try {
     const user = await getCurrentUser()
-    
-    const notes = await prisma.note.findMany({
-      where: {
-        userId: user.id
-      },
+    return await prisma.note.findMany({
+      where: { userId: user.id },
       orderBy: { updatedAt: 'desc' },
     })
-    return notes
   } catch (error) {
     console.error('Erro ao buscar notas:', error)
-    throw new Error(error instanceof Error ? error.message : 'Erro ao buscar notas')
-  }
-}
-
-export async function getNotesAfter(timestamp: Date) {
-  try {
-    const user = await getCurrentUser()
-    
-    const notes = await prisma.note.findMany({
-      where: {
-        userId: user.id,
-        updatedAt: {
-          gt: timestamp
-        }
-      },
-      orderBy: { updatedAt: 'desc' },
-    })
-    return notes
-  } catch (error) {
-    console.error('Erro ao buscar notas atualizadas:', error)
     throw new Error(error instanceof Error ? error.message : 'Erro ao buscar notas')
   }
 }

@@ -1,5 +1,5 @@
 import { Note } from '@/lib/stores/note-store';
-import { SidebarMenu, SidebarMenuItem } from '@/components/ui/sidebar';
+import { SidebarMenuItem } from '@/components/ui/sidebar';
 import { NoteListItem } from './note-list-item';
 
 interface NoteListProps {

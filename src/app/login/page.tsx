@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { GalleryVerticalEnd } from "lucide-react"
 import { LoginForm } from "@/components/auth/login/login-form"
-import { redirectIfAuthenticated } from "@/utils/auth-redirect"
+import { redirectIfAuthenticated } from "@/utils/auth-utils"
 
 export default async function Login() {
 

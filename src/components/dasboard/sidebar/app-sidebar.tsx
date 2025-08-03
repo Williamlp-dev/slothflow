@@ -1,5 +1,5 @@
 'use client';
-import { Plus, Search, Home, Origami, FileText, FolderPlus, FilePlus } from 'lucide-react';
+import { Search, Home, Origami, FolderPlus, FilePlus } from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
@@ -50,7 +50,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
 
       <SidebarContent className="flex flex-col gap-2 p-2">
-        {/* Itens de Navegação Principal */}
         <SidebarMenu>
           {navItems.main.map((item) => (
             <SidebarMenuItem key={item.title}>
@@ -66,23 +65,19 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         
         <Separator />
 
-        {/* Seção de Workspace (Pastas e Notas) */}
         <div className="flex-1">
           <div className="mb-2 flex items-center justify-between">
             <SidebarGroupLabel>Workspace</SidebarGroupLabel>
             <div className='flex items-center'>
-              {/* Botão para criar Nota na Raiz */}
               <Button variant="ghost" size="sm" onClick={() => handleCreateNote(null)} className="h-6 w-6 p-0" title="Criar Nota">
                 <FilePlus className="h-3 w-3" />
               </Button>
-              {/* Botão para criar Pasta */}
               <Button variant="ghost" size="sm" onClick={handleAddNewFolder} className="h-6 w-6 p-0" title="Criar Pasta">
                 <FolderPlus className="h-3 w-3" />
               </Button>
             </div>
           </div>
           <SidebarMenu>
-            {/* Lista de Pastas (que agora contêm suas notas) */}
             <FolderList
               folders={folders}
               loading={foldersLoading}
@@ -95,10 +90,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               onNoteSelect={handleSelectNote}
               onNoteDelete={handleDeleteNote}
             />
-            {/* Separador se houver pastas e notas sem pasta */}
             {folders.length > 0 && unfiledNotes.length > 0 && <Separator className="my-2"/>}
-
-            {/* Lista de Notas Sem Pasta */}
             {notesLoading ? (
               <div></div>
             ) : (
