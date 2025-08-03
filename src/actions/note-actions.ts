@@ -48,16 +48,16 @@ export async function createNote(
   try {
     const user = await getCurrentUser()
     
-    const data = {
-      title: (formData.get('title') as string) || 'Sem Título',
-      description: (formData.get('description') as string) || '',
-    }
+    const title = (formData.get('title') as string) || 'Sem Título'
+    const description = (formData.get('description') as string) || ''
+    const folderId = formData.get('folderId') as string | null
 
     const note = await prisma.note.create({
       data: {
-        title: data.title,
-        description: data.description,
+        title,
+        description,
         userId: user.id,
+        folderId: folderId, // Associa a nota à pasta, se um folderId for fornecido
       },
     })
 
