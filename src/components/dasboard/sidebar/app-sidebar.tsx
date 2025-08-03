@@ -1,9 +1,8 @@
 'use client';
-import { Plus, Search, Trash2, Home, Origami } from 'lucide-react';
+import { Plus, Search, Home, Origami, FileText, FolderPlus, FilePlus } from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
@@ -13,19 +12,27 @@ import {
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useNotes } from '@/hooks/notes/use-notes';
-import { NoteList } from '@/components/notes/note-list';
+import { useFolders } from '@/hooks/notes/use-folders';
+import { FolderList } from '@/components/folders/folder-list';
+import { NoteListItem } from '@/components/notes/note-list-item';
 
 const navItems = {
   main: [
     { title: 'Buscar', url: '#', icon: Search },
     { title: 'Página inicial', url: '#', icon: Home },
   ],
-  footer: [{ title: 'Lixeira', url: '#', icon: Trash2 }],
 };
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const { notes, loading, selectedNote, handleSelectNote, handleCreateNote, handleDeleteNote } =
-    useNotes();
+  const { allNotes, unfiledNotes, loading: notesLoading, selectedNote, handleSelectNote, handleCreateNote, handleDeleteNote } = useNotes();
+  const { folders, loading: foldersLoading, handleSelectFolder, handleCreateFolder, handleRenameFolder, handleDeleteFolder } = useFolders();
+
+  const handleAddNewFolder = () => {
+    const folderName = prompt('Digite o nome da nova pasta:');
+    if (folderName && folderName.trim() !== '') {
+      handleCreateFolder(folderName);
+    }
+  };
 
   return (
     <Sidebar collapsible="offcanvas" {...props}>
@@ -35,52 +42,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <SidebarMenuButton asChild className="data-[slot=sidebar-menu-button]:!p-1.5">
               <a href="#">
                 <Origami className="!size-5" />
-                <span className="text-base font-semibold">Acme Inc.</span>
+                <span className="text-base font-semibold">SlothFlow</span>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
-      <Separator />
 
-      <SidebarContent className="flex flex-col gap-4">
-        <div className="px-2">
-          <SidebarMenu>
-            {navItems.main.map((item) => (
-              <SidebarMenuItem key={item.title}>
-                <SidebarMenuButton asChild>
-                  <a href={item.url}>
-                    <item.icon className="size-4" />
-                    <span>{item.title}</span>
-                  </a>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))}
-          </SidebarMenu>
-        </div>
-
-        <div className="px-2">
-          <div className="mb-2 flex items-center justify-between">
-            <SidebarGroupLabel>Notas</SidebarGroupLabel>
-            <Button variant="ghost" size="sm" onClick={handleCreateNote} className="h-6 w-6 p-0">
-              <Plus className="h-3 w-3" />
-            </Button>
-          </div>
-          <SidebarMenu>
-            <NoteList
-              notes={notes}
-              loading={loading}
-              selectedNote={selectedNote}
-              onNoteSelect={handleSelectNote}
-              onNoteDelete={handleDeleteNote}
-            />
-          </SidebarMenu>
-        </div>
-      </SidebarContent>
-
-      <SidebarFooter>
+      <SidebarContent className="flex flex-col gap-2 p-2">
+        {/* Itens de Navegação Principal */}
         <SidebarMenu>
-          {navItems.footer.map((item) => (
+          {navItems.main.map((item) => (
             <SidebarMenuItem key={item.title}>
               <SidebarMenuButton asChild>
                 <a href={item.url}>
@@ -91,7 +63,58 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             </SidebarMenuItem>
           ))}
         </SidebarMenu>
-      </SidebarFooter>
+        
+        <Separator />
+
+        {/* Seção de Workspace (Pastas e Notas) */}
+        <div className="flex-1">
+          <div className="mb-2 flex items-center justify-between">
+            <SidebarGroupLabel>Workspace</SidebarGroupLabel>
+            <div className='flex items-center'>
+              {/* Botão para criar Nota na Raiz */}
+              <Button variant="ghost" size="sm" onClick={() => handleCreateNote(null)} className="h-6 w-6 p-0" title="Criar Nota">
+                <FilePlus className="h-3 w-3" />
+              </Button>
+              {/* Botão para criar Pasta */}
+              <Button variant="ghost" size="sm" onClick={handleAddNewFolder} className="h-6 w-6 p-0" title="Criar Pasta">
+                <FolderPlus className="h-3 w-3" />
+              </Button>
+            </div>
+          </div>
+          <SidebarMenu>
+            {/* Lista de Pastas (que agora contêm suas notas) */}
+            <FolderList
+              folders={folders}
+              loading={foldersLoading}
+              allNotes={allNotes}
+              onFolderSelect={handleSelectFolder}
+              onFolderDelete={handleDeleteFolder}
+              onFolderRename={handleRenameFolder}
+              onCreateNoteInFolder={handleCreateNote}
+              selectedNote={selectedNote}
+              onNoteSelect={handleSelectNote}
+              onNoteDelete={handleDeleteNote}
+            />
+            {/* Separador se houver pastas e notas sem pasta */}
+            {folders.length > 0 && unfiledNotes.length > 0 && <Separator className="my-2"/>}
+
+            {/* Lista de Notas Sem Pasta */}
+            {notesLoading ? (
+              <div></div>
+            ) : (
+              unfiledNotes.map(note => (
+                <NoteListItem
+                  key={note.id}
+                  note={note}
+                  isSelected={selectedNote?.id === note.id}
+                  onSelect={handleSelectNote}
+                  onDelete={handleDeleteNote}
+                />
+              ))
+            )}
+          </SidebarMenu>
+        </div>
+      </SidebarContent>
     </Sidebar>
   );
 }
