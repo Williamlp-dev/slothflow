@@ -1,208 +1,294 @@
-import { useState, useRef, useEffect } from 'react';
-import { Folder, MoreHorizontal, Plus, ChevronDown, ChevronRight, FileText, Trash2, Edit, FilePlus } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import type { Folder as FolderType, Note } from '@/types';
+"use client"
+
+import { useState, useMemo, useRef, useEffect } from "react"
+import { Folder, FolderOpen, FileText, MoreHorizontal, Trash2, Edit, FilePlus } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { TreeItem, TreeItemLabel } from "@/components/ui/tree"
+import { useTreeItem } from "@/hooks/use-tree-item"
+import type { Folder as FolderType, Note } from "@/types"
 
 interface FolderListItemProps {
-  folder: FolderType;
-  notesInFolder: Note[];
-  isSelected: boolean;
-  onSelect: (folderId: string) => void;
-  onDelete: (folderId: string) => void;
-  onRename: (folderId: string, newName: string) => Promise<boolean>;
-  onCreateNoteInFolder: (folderId: string) => void;
-  selectedNote: Note | null;
-  onNoteSelect: (note: Note) => void;
-  onNoteDelete: (noteId: string) => void;
+  folder: FolderType
+  notes: Note[]
+  onFolderSelect: (folderId: string) => void
+  onFolderDelete: (folderId: string) => void
+  onFolderRename: (folderId: string, newName: string) => Promise<boolean>
+  onCreateNoteInFolder: (folderId: string) => void
+  selectedNote: Note | null
+  onNoteSelect: (note: Note) => void
+  onNoteDelete: (noteId: string) => void
+}
+
+// Componente separado para as notas para evitar problemas com hooks
+function FolderNoteItem({ 
+  note, 
+  selectedNote, 
+  onNoteSelect, 
+  onNoteDelete 
+}: {
+  note: Note
+  selectedNote: Note | null
+  onNoteSelect: (note: Note) => void
+  onNoteDelete: (noteId: string) => void
+}) {
+  const noteItem = useTreeItem({
+    id: note.id,
+    name: note.title || "Sem Título",
+    type: "note",
+    level: 1,
+    isSelected: selectedNote?.id === note.id,
+    data: note,
+  })
+
+  return (
+    <TreeItem 
+      item={noteItem} 
+      className="group w-full cursor-pointer" 
+      asChild
+    >
+      <div onClick={() => onNoteSelect(note)}>
+        <TreeItemLabel className="flex w-full items-center justify-between pr-2">
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <FileText className="size-4 text-gray-500" />
+            <span className="truncate text-sm">{note.title || "Sem Título"}</span>
+          </div>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <MoreHorizontal className="h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onNoteDelete(note.id)
+                }}
+                className="text-red-500 focus:text-red-600"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Excluir
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </TreeItemLabel>
+      </div>
+    </TreeItem>
+  )
 }
 
 export function FolderListItem({
   folder,
-  notesInFolder,
-  isSelected,
-  onSelect,
-  onDelete,
-  onRename,
+  notes,
+  onFolderSelect,
+  onFolderDelete,
+  onFolderRename,
   onCreateNoteInFolder,
   selectedNote,
   onNoteSelect,
-  onNoteDelete
+  onNoteDelete,
 }: FolderListItemProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [isRenaming, setIsRenaming] = useState(false);
-  const [editingName, setEditingName] = useState(folder.name);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [isExpanded, setIsExpanded] = useState(false)
+  const [isRenaming, setIsRenaming] = useState(false)
+  const [newName, setNewName] = useState(folder.name)
+  const [isRenameInProgress, setIsRenameInProgress] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
 
+  const folderItem = useTreeItem({
+    id: folder.id,
+    name: folder.name,
+    type: "folder",
+    level: 0,
+    isExpanded,
+    data: folder,
+  })
+
+  // Sincronizar o nome quando a pasta mudar
+  useEffect(() => {
+    setNewName(folder.name)
+  }, [folder.name])
+
+  // Focar no input quando entrar em modo de renomeação
   useEffect(() => {
     if (isRenaming && inputRef.current) {
-      inputRef.current.focus();
-      inputRef.current.select();
+      inputRef.current.focus()
+      inputRef.current.select()
     }
-  }, [isRenaming]);
-
-  const toggleExpanded = () => {
-    setIsExpanded(!isExpanded);
-  };
+  }, [isRenaming])
 
   const handleStartRename = () => {
-    setEditingName(folder.name);
-    setIsRenaming(true);
-  };
+    setNewName(folder.name)
+    setIsRenaming(true)
+  }
 
   const handleCancelRename = () => {
-    setEditingName(folder.name);
-    setIsRenaming(false);
-  };
+    setNewName(folder.name)
+    setIsRenaming(false)
+    setIsRenameInProgress(false)
+  }
 
   const handleConfirmRename = async () => {
-    const trimmedName = editingName.trim();
+    if (isRenameInProgress) return
+
+    const trimmedName = newName.trim()
     
-    if (!trimmedName) {
-      alert('O nome da pasta não pode estar vazio');
-      return;
+    // Se o nome não mudou ou está vazio, cancela
+    if (!trimmedName || trimmedName === folder.name) {
+      handleCancelRename()
+      return
     }
 
-    if (trimmedName === folder.name) {
-      setIsRenaming(false);
-      return;
+    try {
+      setIsRenameInProgress(true)
+      const success = await onFolderRename(folder.id, trimmedName)
+      
+      if (success) {
+        setIsRenaming(false)
+        setIsRenameInProgress(false)
+      } else {
+        // Se falhou, volta ao nome original
+        setNewName(folder.name)
+        setIsRenameInProgress(false)
+      }
+    } catch (error) {
+      console.error('Erro ao renomear pasta:', error)
+      setNewName(folder.name)
+      setIsRenameInProgress(false)
     }
+  }
 
-    const success = await onRename(folder.id, trimmedName);
-    if (success) {
-      setIsRenaming(false);
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    e.stopPropagation() // Impede que o evento suba para o TreeItem
+    
+    if (e.key === "Enter") {
+      e.preventDefault()
+      handleConfirmRename()
+    } else if (e.key === "Escape") {
+      e.preventDefault()
+      handleCancelRename()
     }
-  };
+  }
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleConfirmRename();
-    } else if (e.key === 'Escape') {
-      handleCancelRename();
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewName(e.target.value)
+  }
+
+  const handleInputBlur = () => {
+    // Só confirma se não estiver sendo cancelado pelo ESC
+    if (isRenaming) {
+      handleConfirmRename()
     }
-  };
+  }
+
+  const handleFolderClick = () => {
+    if (!isRenaming) {
+      setIsExpanded(!isExpanded)
+      onFolderSelect(folder.id)
+    }
+  }
 
   return (
-    <SidebarMenuItem className="flex flex-col items-start">
-      <div className="group flex w-full items-center justify-between">
-        <div className="flex flex-1 items-center">
-          <button
-            onClick={toggleExpanded}
-            className="flex items-center justify-center p-1 hover:bg-accent/50 rounded"
-          >
-            {isExpanded ? (
-              <ChevronDown className="h-3 w-3" />
-            ) : (
-              <ChevronRight className="h-3 w-3" />
+    <div className="w-full">
+      <TreeItem 
+        item={folderItem} 
+        className="group w-full cursor-pointer" 
+        asChild
+      >
+        <div onClick={handleFolderClick}>
+          <TreeItemLabel className="flex w-full items-center justify-between pr-2">
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              {isExpanded ? <FolderOpen className="size-4" /> : <Folder className="size-4" />}
+              
+              {isRenaming ? (
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={newName}
+                  onChange={handleInputChange}
+                  onBlur={handleInputBlur}
+                  onKeyDown={handleInputKeyDown}
+                  className="flex-1 bg-transparent border border-border rounded px-1 outline-none text-sm focus:ring-1 focus:ring-ring"
+                  disabled={isRenameInProgress}
+                  onClick={(e) => e.stopPropagation()}
+                  onFocus={(e) => e.stopPropagation()}
+                />
+              ) : (
+                <span className="truncate text-sm font-medium">{folder.name}</span>
+              )}
+              
+              <span className="text-xs text-muted-foreground">({notes.length})</span>
+            </div>
+
+            {!isRenaming && (
+              <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-6 w-6 p-0" 
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <MoreHorizontal className="h-3 w-3" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleStartRename()
+                      }}
+                    >
+                      <Edit className="mr-2 h-4 w-4" />
+                      Renomear
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                       onClick={(e) => {
+                    e.stopPropagation()
+                    onCreateNoteInFolder(folder.id)
+                  }}
+                    >
+                      <FilePlus className="h-3 w-3 mr-2" />
+                      Criar Nota
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onFolderDelete(folder.id)
+                      }}
+                      className="text-red-500 focus:text-red-600"
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Excluir
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             )}
-          </button>
-          
-          {isRenaming ? (
-            <div className="flex-1 ml-1">
-              <Input
-                ref={inputRef}
-                value={editingName}
-                onChange={(e) => setEditingName(e.target.value)}
-                onKeyDown={handleKeyDown}
-                onBlur={handleConfirmRename}
-                className="h-8 text-sm"
-                maxLength={50}
-              />
-            </div>
-          ) : (
-            <SidebarMenuButton
-              asChild
-              className={cn('flex-1 cursor-pointer justify-start ml-1', isSelected && 'bg-accent')}
-            >
-              <button onClick={() => onSelect(folder.id)} className="flex items-center gap-2">
-                <Folder className="size-4" />
-                <span className="truncate">{folder.name}</span>
-              </button>
-            </SidebarMenuButton>
-          )}
+          </TreeItemLabel>
         </div>
+      </TreeItem>
 
-        {!isRenaming && (
-          <div className="flex items-center opacity-0 transition-opacity group-hover:opacity-100">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                  <MoreHorizontal className="h-3 w-3" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={handleStartRename}>
-                  <Edit className="mr-2 h-4 w-4" />
-                  Renomear
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => onCreateNoteInFolder(folder.id)}
-                >
-                  <FilePlus className="mr-2 h-4 w-4" />
-                  Criar Nota
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => onDelete(folder.id)}
-                  className="text-red-500 focus:text-red-600"
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Excluir
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        )}
-      </div>
-      {isExpanded && notesInFolder.length > 0 && (
-        <div className="ml-4 mt-1 w-full space-y-1">
-          {notesInFolder.map((note) => (
-            <div
+      {isExpanded && notes.length > 0 && (
+        <div className="ml-4 mt-1 space-y-0.5">
+          {notes.map((note) => (
+            <FolderNoteItem
               key={note.id}
-              className="group flex w-full items-center justify-between rounded-md hover:bg-accent/50"
-            >
-              <button
-                onClick={() => onNoteSelect(note)}
-                className={cn(
-                  'flex flex-1 items-center gap-2 rounded-md p-2 text-left text-sm transition-colors',
-                  selectedNote?.id === note.id && 'bg-accent'
-                )}
-              >
-                <FileText className="h-3 w-3" />
-                <span className="truncate">{note.title || 'Sem Título'}</span>
-              </button>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 w-6 p-0 opacity-0 transition-opacity group-hover:opacity-100"
-                  >
-                    <MoreHorizontal className="h-3 w-3" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    onClick={() => onNoteDelete(note.id)}
-                    className="text-red-500 focus:text-red-600"
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Excluir
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+              note={note}
+              selectedNote={selectedNote}
+              onNoteSelect={onNoteSelect}
+              onNoteDelete={onNoteDelete}
+            />
           ))}
         </div>
       )}
-    </SidebarMenuItem>
-  );
+    </div>
+  )
 }

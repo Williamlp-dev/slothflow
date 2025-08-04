@@ -1,5 +1,8 @@
-'use client';
-import { Search, Home, Origami, FolderPlus, FilePlus } from 'lucide-react';
+"use client"
+
+import type React from "react"
+
+import { Search, Home, Origami, FolderPlus, FilePlus } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -8,31 +11,47 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
-} from '@/components/ui/sidebar';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
-import { useNotes } from '@/hooks/notes/use-notes';
-import { useFolders } from '@/hooks/notes/use-folders';
-import { FolderList } from '@/components/folders/folder-list';
-import { NoteListItem } from '@/components/notes/note-list-item';
+} from "@/components/ui/sidebar"
+import { Button } from "@/components/ui/button"
+import { Separator } from "@/components/ui/separator"
+import { useNotes } from "@/hooks/notes/use-notes"
+import { useFolders } from "@/hooks/notes/use-folders"
+import { FolderList } from "@/components/folders/folder-list"
+import { NoteList } from "@/components/notes/note-list"
 
 const navItems = {
   main: [
-    { title: 'Buscar', url: '#', icon: Search },
-    { title: 'Página inicial', url: '#', icon: Home },
+    { title: "Buscar", url: "#", icon: Search },
+    { title: "Página inicial", url: "#", icon: Home },
   ],
-};
+}
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const { allNotes, unfiledNotes, loading: notesLoading, selectedNote, handleSelectNote, handleCreateNote, handleDeleteNote } = useNotes();
-  const { folders, loading: foldersLoading, handleSelectFolder, handleCreateFolder, handleRenameFolder, handleDeleteFolder } = useFolders();
+  const {
+    allNotes,
+    unfiledNotes,
+    loading: notesLoading,
+    selectedNote,
+    handleSelectNote,
+    handleCreateNote,
+    handleDeleteNote,
+  } = useNotes()
+
+  const {
+    folders,
+    loading: foldersLoading,
+    handleSelectFolder,
+    handleCreateFolder,
+    handleRenameFolder,
+    handleDeleteFolder,
+  } = useFolders()
 
   const handleAddNewFolder = () => {
-    const folderName = prompt('Digite o nome da nova pasta:');
-    if (folderName && folderName.trim() !== '') {
-      handleCreateFolder(folderName);
+    const folderName = prompt("Digite o nome da nova pasta:")
+    if (folderName && folderName.trim() !== "") {
+      handleCreateFolder(folderName)
     }
-  };
+  }
 
   return (
     <Sidebar collapsible="offcanvas" {...props}>
@@ -62,22 +81,35 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             </SidebarMenuItem>
           ))}
         </SidebarMenu>
-        
+
         <Separator />
 
         <div className="flex-1">
           <div className="mb-2 flex items-center justify-between">
             <SidebarGroupLabel>Workspace</SidebarGroupLabel>
-            <div className='flex items-center'>
-              <Button variant="ghost" size="sm" onClick={() => handleCreateNote(null)} className="h-6 w-6 p-0" title="Criar Nota">
+            <div className="flex items-center">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleCreateNote(null)}
+                className="h-6 w-6 p-0"
+                title="Criar Nota"
+              >
                 <FilePlus className="h-3 w-3" />
               </Button>
-              <Button variant="ghost" size="sm" onClick={handleAddNewFolder} className="h-6 w-6 p-0" title="Criar Pasta">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleAddNewFolder}
+                className="h-6 w-6 p-0"
+                title="Criar Pasta"
+              >
                 <FolderPlus className="h-3 w-3" />
               </Button>
             </div>
           </div>
-          <SidebarMenu>
+
+          <div className="space-y-2">
             <FolderList
               folders={folders}
               loading={foldersLoading}
@@ -90,23 +122,19 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               onNoteSelect={handleSelectNote}
               onNoteDelete={handleDeleteNote}
             />
-            {folders.length > 0 && unfiledNotes.length > 0 && <Separator className="my-2"/>}
-            {notesLoading ? (
-              <div></div>
-            ) : (
-              unfiledNotes.map(note => (
-                <NoteListItem
-                  key={note.id}
-                  note={note}
-                  isSelected={selectedNote?.id === note.id}
-                  onSelect={handleSelectNote}
-                  onDelete={handleDeleteNote}
+              <div>
+                <NoteList
+                  notes={unfiledNotes}
+                  loading={notesLoading}
+                  selectedNote={selectedNote}
+                  onNoteSelect={handleSelectNote}
+                  onNoteDelete={handleDeleteNote}
                 />
-              ))
-            )}
-          </SidebarMenu>
+              </div>
+
+          </div>
         </div>
       </SidebarContent>
     </Sidebar>
-  );
+  )
 }

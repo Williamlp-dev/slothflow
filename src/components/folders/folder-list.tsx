@@ -1,32 +1,27 @@
-import { SidebarMenuItem } from '@/components/ui/sidebar';
-import { FolderListItem } from './folder-list-item';
-import type { Folder, Note } from '@/types';
+import { Tree } from "@/components/ui/tree"
+import { FolderListItem } from "./folder-list-item"
+import type { Folder, Note } from "@/types"
 
 interface FolderListProps {
-  folders: Folder[];
-  loading: boolean;
-  allNotes: Note[];
-  onFolderSelect: (folderId: string) => void;
-  onFolderDelete: (folderId: string) => void;
-  onFolderRename: (folderId: string, newName: string) => Promise<boolean>;
-  onCreateNoteInFolder: (folderId: string) => void;
-  selectedNote: Note | null;
-  onNoteSelect: (note: Note) => void;
-  onNoteDelete: (noteId: string) => void;
+  folders: Folder[]
+  loading: boolean
+  allNotes: Note[]
+  onFolderSelect: (folderId: string) => void
+  onFolderDelete: (folderId: string) => void
+  onFolderRename: (folderId: string, newName: string) => Promise<boolean>
+  onCreateNoteInFolder: (folderId: string) => void
+  selectedNote: Note | null
+  onNoteSelect: (note: Note) => void
+  onNoteDelete: (noteId: string) => void
 }
 
 const FolderListSkeleton = () => (
-  <>
+  <div className="space-y-2">
     {Array.from({ length: 2 }).map((_, i) => (
-      <SidebarMenuItem key={i} className="px-2 py-1.5">
-        <div className="flex flex-1 animate-pulse items-center gap-2">
-          <div className="h-4 w-4 rounded bg-gray-700" />
-          <div className="h-4 w-16 rounded bg-gray-700" />
-        </div>
-      </SidebarMenuItem>
+      <div key={i} className="h-8 bg-muted rounded animate-pulse" />
     ))}
-  </>
-);
+  </div>
+)
 
 export function FolderList({
   folders,
@@ -38,26 +33,24 @@ export function FolderList({
   onCreateNoteInFolder,
   selectedNote,
   onNoteSelect,
-  onNoteDelete
+  onNoteDelete,
 }: FolderListProps) {
   if (loading) {
-    return <FolderListSkeleton />;
+    return <FolderListSkeleton />
   }
 
   return (
-    <>
+    <Tree className="space-y-1">
       {folders.map((folder) => {
-        const notesInFolder = allNotes.filter(note => note.folderId === folder.id);
+        const notesInFolder = allNotes.filter((note) => note.folderId === folder.id)
         return (
           <FolderListItem
             key={folder.id}
             folder={folder}
-            notesInFolder={notesInFolder}
-            isSelected={false}
-            
-            onSelect={onFolderSelect}
-            onDelete={onFolderDelete}
-            onRename={onFolderRename}
+            notes={notesInFolder}
+            onFolderSelect={onFolderSelect}
+            onFolderDelete={onFolderDelete}
+            onFolderRename={onFolderRename}
             onCreateNoteInFolder={onCreateNoteInFolder}
             selectedNote={selectedNote}
             onNoteSelect={onNoteSelect}
@@ -65,6 +58,6 @@ export function FolderList({
           />
         )
       })}
-    </>
-  );
+    </Tree>
+  )
 }
