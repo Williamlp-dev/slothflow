@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { AppSidebar } from "@/components/dasboard/sidebar/app-sidebar"
 import { SiteHeader } from "@/components/dasboard/sidebar/Header/site-header"
 import { NoteViewer } from "@/components/notes/note-viewer"
+import MiniChat from "@/components/chat/mini-chat"
 import {
   SidebarInset,
   SidebarProvider,
@@ -34,6 +35,7 @@ export default async function Dashboard() {
           <NoteViewer />
         </div>
       </SidebarInset>
+      <MiniChat />
     </SidebarProvider>
   )
 }
